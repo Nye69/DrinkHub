@@ -18,13 +18,14 @@
 backend/
 ├── index.ts          → registra los juegos y levanta el servidor
 ├── server/           → todo lo compartido (sockets, sesiones, DB, seguridad)
-├── sipitordipit/     → reglas + cartas + data/sipitordipit.db
-└── pyramid/          → reglas + data/pyramid.db
+├── sipitordipit/     → reglas + cartas
+├── pyramid/          → reglas
+└── storage/          → único volumen: server/, sipitordipit/, pyramid/
 ```
 
 - **TypeScript sobre Node**, sin paso de compilación (Node ejecuta `.ts` directo). `tsc` solo hace el typecheck.
 - **Rutas por juego**: `/api/sipitordipit`, `/api/pyramid`, cada una con su WebSocket (`/api/<juego>/ws`), `/stats` y `/rooms/:code`.
-- **Una base SQLite por juego**, guardada en `<juego>/data/`. En Docker cada carpeta `data/` es un volumen: `server/data` (secreto de sesión), `sipitordipit/data` y `pyramid/data`. Hay un `docker-compose.yml` de ejemplo.
+- **Una base SQLite por juego**, dentro de `backend/storage/`, con una carpeta por módulo: `storage/server/` (secreto de sesión), `storage/sipitordipit/sipitordipit.db` y `storage/pyramid/pyramid.db`. En Docker basta **un solo volumen** en `/app/backend/storage`. Hay un `docker-compose.yml` de ejemplo.
 - **Contrato `GameModule`**: un juego nuevo es una carpeta con `start`, `actions` y `view`. El hub compartido le da salas, reconexión, anfitrión y persistencia.
 
 ## 3. Cómo se resuelve el celular bloqueado
@@ -39,7 +40,7 @@ backend/
 7. **Salas persistentes**: no se borran porque todos se desconecten, solo si quedan vacías o pasan 12 h sin actividad.
 8. **Límites por IP real** (`X-Real-IP`) y más altos, pensados para grupos detrás del mismo WiFi.
 9. **Guardado en SQLite** menos de 500 ms después de cada cambio, y al apagarse (`SIGTERM`). Tras un reinicio todos retoman la partida.
-10. **Secreto de sesión persistente** en `server/data/session.secret`: los tokens siguen siendo válidos después de reiniciar o actualizar el contenedor.
+10. **Secreto de sesión persistente** en `storage/server/session.secret`: los tokens siguen siendo válidos después de reiniciar o actualizar el contenedor.
 
 **Cliente** (`useWebSocket` + `useGameRoom`)
 1. Ping de aplicación cada 10 s. Si pasan 25 s sin respuesta, reconecta.
@@ -68,8 +69,8 @@ backend/
 ## 6. Despliegue
 
 1. Construir la imagen (el CI lo hace en `main`).
-2. Montar los volúmenes (ver `docker-compose.yml`). **Las salas del backend Python no se migran**: era un JSON temporal de partidas en curso.
-3. Opcional: definir `SESSION_SECRET`. Si no se define, se genera y se guarda en el volumen `server/data`.
+2. Montar un solo volumen en `/app/backend/storage` (ver `docker-compose.yml`). Es la misma ruta del backend Python, así que puedes reutilizar ese volumen: el `rooms.json` viejo se ignora y **las partidas que estaban en curso no se migran**.
+3. Opcional: definir `SESSION_SECRET`. Si no se define, se genera y se guarda en `storage/server/` dentro del volumen.
 4. Si hay otro proxy delante (Cloudflare, Traefik), debe permitir WebSocket en `/api/*/ws`.
 
 ## 7. Siguientes pasos sugeridos

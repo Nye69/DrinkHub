@@ -7,23 +7,27 @@ build step: `npm start` runs `index.ts` directly. `npm run typecheck` runs `tsc`
 backend/
 ├── index.ts              # boot: registers the games, starts HTTP + WS
 ├── server/               # shared by every game
-│   ├── config.ts         # env vars, per-module data dirs
+│   ├── config.ts         # env vars, per-module storage dirs
 │   ├── hub.ts            # realtime server: sessions, seats, presence, host, persistence
 │   ├── http.ts           # REST router + WS upgrade routing
 │   ├── room.ts           # presence / host / turn-order helpers
 │   ├── security.ts       # session tokens, input sanitizing, rate limits, client IP
 │   ├── store.ts          # SQLite store (one DB per game)
-│   ├── types.ts          # Room, Player, GameModule contract
-│   └── data/             # session.secret (volume)
+│   └── types.ts          # Room, Player, GameModule contract
 ├── sipitordipit/
 │   ├── index.ts          # game rules (GameModule)
-│   ├── cards.ts          # the 200 cards
-│   └── data/             # sipitordipit.db (volume)
+│   └── cards.ts          # the 200 cards
 ├── pyramid/
-│   ├── index.ts
-│   └── data/             # pyramid.db (volume)
+│   └── index.ts
+├── storage/              # runtime data (the only volume), one folder per module
+│   ├── server/           # session.secret
+│   ├── sipitordipit/     # sipitordipit.db
+│   └── pyramid/          # pyramid.db
 └── test/                 # node:test integration tests (real sockets)
 ```
+
+In Docker, mount a single volume at `/app/backend/storage`. `DATA_DIR` can
+move the storage root elsewhere; the per-module folders are created on start.
 
 ## Routes
 
@@ -42,7 +46,7 @@ Slugs: `sipitordipit`, `pyramid`.
 
 1. Create `backend/<slug>/index.ts` exporting a `GameModule` (see `server/types.ts`).
 2. Register it in `index.ts`: `new GameHub(myGame)`.
-3. Add a volume for `backend/<slug>/data` in the Dockerfile / compose file.
+3. Nothing to add for storage: its DB is created in `storage/<slug>/` automatically.
 
 The hub gives the game rooms, seats, host handover, reconnection and
 persistence for free; the module only implements `start`, its `actions` and

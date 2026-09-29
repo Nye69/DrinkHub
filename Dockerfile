@@ -30,10 +30,12 @@ COPY --from=build-frontend /app/frontend/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY docker/supervisord.conf /etc/supervisord.conf
 
-# One SQLite database per game + the session secret. Mount these as volumes
-# so rooms and player sessions survive container restarts/updates.
-RUN mkdir -p /app/backend/server/data /app/backend/sipitordipit/data /app/backend/pyramid/data
-VOLUME ["/app/backend/server/data", "/app/backend/sipitordipit/data", "/app/backend/pyramid/data"]
+# All runtime data lives in one volume, with a folder per module:
+#   storage/server/session.secret
+#   storage/sipitordipit/sipitordipit.db
+#   storage/pyramid/pyramid.db
+RUN mkdir -p /app/backend/storage
+VOLUME ["/app/backend/storage"]
 
 ENV NODE_ENV=production \
     HOST=127.0.0.1 \
