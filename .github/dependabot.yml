@@ -11,8 +11,8 @@ updates:
         patterns:
           - "*"
 
-  # Backend (Python / pip)
-  - package-ecosystem: "pip"
+  # Backend (Node / npm)
+  - package-ecosystem: "npm"
     directory: "/backend"
     open-pull-requests-limit: 15
     schedule:
