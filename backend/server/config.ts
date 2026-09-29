@@ -50,12 +50,14 @@ export const config = {
 };
 
 /**
- * Where a module keeps its runtime data. Defaults to `<module>/data` next to its
- * code; `DATA_DIR` moves every module under a single root instead.
+ * Where a module keeps its runtime data: `<storage>/<module>`, e.g.
+ * storage/server, storage/sipitordipit, storage/pyramid. The storage root is
+ * `backend/storage` unless `DATA_DIR` points elsewhere, so a single volume
+ * holds everything.
  */
 export function dataDirFor(module: string): string {
-  const root = process.env.DATA_DIR?.trim();
-  const dir = root ? join(resolve(root), module) : join(BACKEND_ROOT, module, 'data');
+  const root = process.env.DATA_DIR?.trim() || join(BACKEND_ROOT, 'storage');
+  const dir = join(resolve(root), module);
   mkdirSync(dir, { recursive: true });
   return dir;
 }
